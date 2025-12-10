@@ -76,24 +76,13 @@ class Loan(db.Model):
         }
 
 # Crear tablas
-with app.app_context():
-    db.create_all()
-
-# ==================== SALUD Y INFO ====================
-
-# Variable para controlar si ya se inicializó
-_initialized = False
-
-def initialize_db():
-    """Inicializar base de datos con datos de muestra"""
-    global _initialized
-    if _initialized:
-        return
-    
-    try:
+def init_database():
+    """Inicializar la base de datos"""
+    with app.app_context():
+        db.create_all()
+        
         # Verificar si ya hay libros
         if Book.query.count() > 0:
-            _initialized = True
             return
         
         # Crear libros de muestra
@@ -140,18 +129,12 @@ def initialize_db():
             libro2.cantidad_disponible -= 1
         
         db.session.commit()
-        logger.info('✓ Base de datos inicializada con datos de muestra')
-        _initialized = True
-    except Exception as e:
-        logger.error(f'Error inicializando BD: {e}')
-        _initialized = True
+        logger.info('✓ Base de datos inicializada')
 
-@app.before_request
-def before_request():
-    """Ejecutar antes de cada request"""
-    initialize_db()
+# Inicializar al cargar la app
+init_database()
 
-@app.route('/health', methods=['GET'])
+# ==================== SALUD Y INFO ====================
 def health():
     """Endpoint de healthcheck para balanceadores de carga"""
     return jsonify({
