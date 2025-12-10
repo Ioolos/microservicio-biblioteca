@@ -24,10 +24,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///lib
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# Inicializar base de datos automáticamente
-with app.app_context():
-    db.create_all()
-
 # Modelos de datos
 class Book(db.Model):
     __tablename__ = 'books'
@@ -78,6 +74,10 @@ class Loan(db.Model):
             'devuelto': self.devuelto,
             'dias_restantes': (self.fecha_vencimiento - datetime.utcnow()).days if not self.devuelto else 0
         }
+
+# Crear tablas
+with app.app_context():
+    db.create_all()
 
 # ==================== SALUD Y INFO ====================
 
