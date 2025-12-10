@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservicio-simple
+  labels:
+    app: microservicio-simple
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: microservicio-simple
+  template:
+    metadata:
+      labels:
+        app: microservicio-simple
+    spec:
+      containers:
+      - name: microservicio-simple
+        image: gcr.io/PROJECT_ID/microservicio-simple:latest
+        ports:
+        - containerPort: 5000
+          name: http
+        env:
+        - name: SERVICE_NAME
+          value: "Microservicio Simple"
+        - name: ENVIRONMENT
+          value: "production"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservicio-simple-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    app: microservicio-simple
