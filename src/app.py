@@ -20,7 +20,7 @@ SERVICE_VERSION = os.getenv('SERVICE_VERSION', '1.0.0')
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
 # Configuración de base de datos
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///libros.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:////tmp/libros.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
