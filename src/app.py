@@ -24,6 +24,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///lib
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# Inicializar base de datos automáticamente
+with app.app_context():
+    db.create_all()
+
 # Modelos de datos
 class Book(db.Model):
     __tablename__ = 'books'
@@ -75,7 +79,77 @@ class Loan(db.Model):
             'dias_restantes': (self.fecha_vencimiento - datetime.utcnow()).days if not self.devuelto else 0
         }
 
-# ==================== HEALTH & INFO ====================
+# ==================== SALUD Y INFO ====================
+
+# Variable para controlar si ya se inicializó
+_initialized = False
+
+def initialize_db():
+    """Inicializar base de datos con datos de muestra"""
+    global _initialized
+    if _initialized:
+        return
+    
+    try:
+        # Verificar si ya hay libros
+        if Book.query.count() > 0:
+            _initialized = True
+            return
+        
+        # Crear libros de muestra
+        books = [
+            Book(titulo='Don Quijote', autor='Miguel de Cervantes', isbn='978-84-376-0494-1', cantidad_total=5, cantidad_disponible=5),
+            Book(titulo='1984', autor='George Orwell', isbn='978-0451524935', cantidad_total=3, cantidad_disponible=3),
+            Book(titulo='El Gran Gatsby', autor='F. Scott Fitzgerald', isbn='978-0743273565', cantidad_total=4, cantidad_disponible=4),
+            Book(titulo='Orgullo y Prejuicio', autor='Jane Austen', isbn='978-0141439518', cantidad_total=2, cantidad_disponible=2),
+            Book(titulo='El Código Da Vinci', autor='Dan Brown', isbn='978-0307474278', cantidad_total=3, cantidad_disponible=2),
+            Book(titulo='Harry Potter', autor='J.K. Rowling', isbn='978-0747532699', cantidad_total=5, cantidad_disponible=4),
+            Book(titulo='Cien años de soledad', autor='Gabriel García Márquez', isbn='978-0-06-088328-7', cantidad_total=2, cantidad_disponible=1),
+            Book(titulo='Fahrenheit 451', autor='Ray Bradbury', isbn='978-1451673265', cantidad_total=3, cantidad_disponible=3),
+        ]
+        
+        for book in books:
+            db.session.add(book)
+        
+        db.session.commit()
+        
+        # Crear préstamos de muestra
+        libro1 = Book.query.filter_by(titulo='Don Quijote').first()
+        libro2 = Book.query.filter_by(titulo='1984').first()
+        
+        if libro1:
+            prestamo1 = Loan(
+                libro_id=libro1.id,
+                usuario_nombre='Juan Pérez',
+                usuario_email='juan@example.com',
+                fecha_prestamo=datetime.utcnow() - timedelta(days=10),
+                fecha_vencimiento=datetime.utcnow() + timedelta(days=4)
+            )
+            db.session.add(prestamo1)
+            libro1.cantidad_disponible -= 1
+        
+        if libro2:
+            prestamo2 = Loan(
+                libro_id=libro2.id,
+                usuario_nombre='María García',
+                usuario_email='maria@example.com',
+                fecha_prestamo=datetime.utcnow() - timedelta(days=5),
+                fecha_vencimiento=datetime.utcnow() + timedelta(days=9)
+            )
+            db.session.add(prestamo2)
+            libro2.cantidad_disponible -= 1
+        
+        db.session.commit()
+        logger.info('✓ Base de datos inicializada con datos de muestra')
+        _initialized = True
+    except Exception as e:
+        logger.error(f'Error inicializando BD: {e}')
+        _initialized = True
+
+@app.before_request
+def before_request():
+    """Ejecutar antes de cada request"""
+    initialize_db()
 
 @app.route('/health', methods=['GET'])
 def health():
