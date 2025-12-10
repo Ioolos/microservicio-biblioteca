@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 543203201427.dkr.ecr.us-east-2.amazonaws.com
+      - REPOSITORY_NAME=microservicio-biblioteca
+      - IMAGE_TAG=latest
+      - IMAGE_URI=543203201427.dkr.ecr.us-east-2.amazonaws.com/$REPOSITORY_NAME:$IMAGE_TAG
+
+  build:
+    commands:
+      - echo Building the Docker image on `date`
+      - docker build -t $IMAGE_URI .
+
+  post_build:
+    commands:
+      - echo Pushing the Docker image to ECR on `date`
+      - docker push $IMAGE_URI
+      - echo Writing image definitions file...
+      - printf '[{"name":"microservicio-biblioteca","imageUri":"%s"}]' $IMAGE_URI > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
